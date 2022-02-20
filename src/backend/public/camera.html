@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Raw Camera</title>
+  <script type="text/javascript" src="/javascripts/webcam-easy.min.js"></script>
+  <script type="text/javascript" src="/javascripts/face-api.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #webcam {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <video id="webcam" autoplay playsinline></video>
+  <canvas id="canvas" class="d-none"></canvas>
+
+  <script>
+    const webcamElement = document.getElementById('webcam');
+    const canvasElement = document.getElementById('canvas');
+    const snapSoundElement = document.getElementById('snapSound');
+    const webcam = new Webcam(webcamElement, 'user');
+
+    webcam.start()
+      .then(result => {
+        console.log("webcam started");
+      })
+      .catch(err => {
+        console.log(err);
+      });
+
+    const loader = async () => {
+      const detectionNet = faceapi.nets.ssdMobilenetv1;
+      await detectionNet.load('data/weights');
+      await faceapi.loadFaceExpressionModel('data/weights');
+      await faceapi.loadFaceLandmarkModel('data/weights');
+      return detectionNet;
+    }
+
+    const detecter = async () => {
+      const minConfidenceFace = 0.5;
+      const expressionResult = await faceapi.detectSingleFace(webcamElement, new faceapi.SsdMobilenetv1Options({ minConfidenceFace })).withFaceExpressions();
+      const landmarkResult = await faceapi.detectSingleFace(webcamElement, new faceapi.SsdMobilenetv1Options({ minConfidenceFace })).withFaceLandmarks();
+
+      const expressionFiltered = Object.fromEntries(Object.entries(expressionResult.expressions).filter(([key, score]) => score > minConfidenceFace).sort((a, b) => b[1] - a[1]));
+
+      const mouthTop = landmarkResult.landmarks._positions[62];
+      const mouthBottom = landmarkResult.landmarks._positions[66];
+      const mouthDist = Math.sqrt((mouthTop._x - mouthBottom._x) ** 2, (mouthTop._y - mouthBottom._y) ** 2);
+
+      console.log(expressionFiltered, mouthDist);
+    }
+
+    const loop = async () => {
+      await loader();
+      setInterval(async () => {
+        await detecter();
+      }, 250);
+    }
+
+    loop();
+
+
+  </script>
+</body>
+
+</html>

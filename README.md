@@ -1,1 +1,3 @@
-# faceControl
+# face-map-image
+
+얼굴 표정에 따라 다른 이미지를 표현해주는 프로그램입니다.
