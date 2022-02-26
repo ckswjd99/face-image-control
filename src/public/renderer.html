@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+
+      cursor: pointer;
+      -webkit-app-region: drag;
+    }
+
+    img {
+      width: 100%;
+    }
+  </style>
+  <script type="text/javascript" src="./javascripts/webcam-easy.min.js"></script>
+  <script type="text/javascript" src="./javascripts/face-api.min.js"></script>
+</head>
+
+<body>
+  <video id="webcam" autoplay playsinline style="display: none;"></video>
+  <img id="render" src="../images/face01.png">
+
+  <script>
+    const bodyElement = document.body
+    bodyElement.onclick = () => window.electronAPI.setMouseIgnore('renderer', true)
+  </script>
+  <script>
+    const webcamElement = document.getElementById('webcam');
+    const webcam = new Webcam(webcamElement, 'user');
+
+    webcam.start()
+      .then(result => {
+        console.log("webcam started");
+      })
+      .catch(err => {
+        console.log(err);
+      });
+
+    const loader = async () => {
+      const detectionNet = faceapi.nets.ssdMobilenetv1;
+      await detectionNet.load('data/weights');
+      await faceapi.loadFaceExpressionModel('data/weights');
+      await faceapi.loadFaceLandmarkModel('data/weights');
+      return detectionNet;
+    }
+
+    const detecter = async () => {
+      const minConfidenceFace = 0.5;
+      const expressionResult = await faceapi.detectSingleFace(webcamElement, new faceapi.SsdMobilenetv1Options({ minConfidenceFace })).withFaceExpressions();
+      const landmarkResult = await faceapi.detectSingleFace(webcamElement, new faceapi.SsdMobilenetv1Options({ minConfidenceFace })).withFaceLandmarks();
+
+      const expressionFiltered = Object.fromEntries(Object.entries(expressionResult.expressions).filter(([key, score]) => score > minConfidenceFace).sort((a, b) => b[1] - a[1]));
+
+      const mouthTop = landmarkResult.landmarks._positions[62];
+      const mouthBottom = landmarkResult.landmarks._positions[66];
+      const mouthDist = Math.sqrt((mouthTop._x - mouthBottom._x) ** 2, (mouthTop._y - mouthBottom._y) ** 2);
+
+      return {
+        expressionFiltered,
+        mouthDist
+      }
+    }
+
+    // LOOP
+
+    const loop = async () => {
+      await loader();
+      setInterval(async () => {
+        const result = await detecter();
+        window.electronAPI.faceData(JSON.stringify(result));
+      }, 100);
+    }
+
+    loop();
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+
+</head>
+
+<body>
+  <h1>Hello World!</h1>
+
+  <h2>Image</h2>
+  <h3>Scale</h3>
+  Width: <input id="rendererW" type="number" value="200"><br>
+  Height: <input id="rendererH" type="number" value="200"><br>
+  <button id="openRenderer">Open Renderer</button>
+  <button id="closeRenderer">Close Renderer</button>
+  <button id="moveRenderer">Move Renderer</button>
+  <button id="transRenderer">Transparent Renderer</button>
+
+  <h2>Setting</h2>
+  <button id="openSetting">Open Setting</button>
+  <button id="closeSetting">Close Setting</button>
+
+  <script>
+    const rendererW = document.querySelector('#rendererW')
+    const rendererH = document.querySelector('#rendererH')
+
+    document.querySelector('#openSetting').onclick = () => window.electronAPI.openWindow('setting')
+    document.querySelector('#closeSetting').onclick = () => window.electronAPI.closeWindow('setting')
+    document.querySelector('#openRenderer').onclick = () => {
+      window.electronAPI.setRendererSize({
+        w: rendererW.value,
+        h: rendererH.value
+      })
+      window.electronAPI.openWindow('renderer')
+    }
+    document.querySelector('#closeRenderer').onclick = () => window.electronAPI.closeWindow('renderer')
+    document.querySelector('#moveRenderer').onclick = () => window.electronAPI.setMouseIgnore('renderer', false)
+    document.querySelector('#transRenderer').onclick = () => window.electronAPI.setMouseIgnore('renderer', true)
+
+  </script>
+</body>
+
+</html>
